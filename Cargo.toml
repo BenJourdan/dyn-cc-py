@@ -1,0 +1,16 @@
+[package]
+name = "dyn-cc-py"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "dyn_cc_py"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.25.1", features = ["extension-module"] }
+dyn-cc = { path = "../dyn-cc" }
+faer = "0.23.2"
+raphtory = { version = "0.16.3", features = ["python"] }
+# raphtory = { version = "0.16.3" }

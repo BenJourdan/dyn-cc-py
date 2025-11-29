@@ -1,0 +1,23 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "dyn-cc-py"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dynamic = ["version"]
+dependencies = [
+    "maturin>=1.10.2",
+    "patchelf>=0.17.2.4",
+    "raphtory>=0.13.1",
+    "scipy>=1.10.1",
+]
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "dyn_cc_py.dyn_cc_py"
