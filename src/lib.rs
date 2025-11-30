@@ -1,10 +1,14 @@
 use faer::sparse::{SparseRowMat, SymbolicSparseRowMat};
-use pyo3::exceptions::{PyTypeError};
-use pyo3::{PyTypeInfo, prelude::*};
-use pyo3::types::{PyAny, PyList};
+use pyo3::exceptions::PyTypeError;
+use pyo3::types::{PyAny, PyList, PyModule};
+use pyo3::prelude::*;
 use raphtory::core::entities::VID;
 use raphtory::prelude::{GID, GraphViewOps};
+use raphtory::python::graph::views::graph_view::PyGraphView;
 use raphtory::python::graph::graph_with_deletions::PyPersistentGraph;
+use raphtory::python::packages::algorithms as rp_algorithms;
+use raphtory::db::api::state::NodeState;
+use raphtory::db::api::view::internal::DynamicGraph;
 use std::sync::Arc;
 
 
@@ -134,6 +138,11 @@ fn dyn_cc_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(new_persistent_graph, m)?)?;
     // m.add_function(wrap_pyfunction!(persistent_type_ptr, m)?)?;
     m.add_class::<DynamicClustering>()?;
+
+    let algos = PyModule::new(m.py(), "algorithms")?;
+    algorithms(&algos)?;
+    m.add_submodule(&algos)?;
+
     Ok(())
 }
 
@@ -169,4 +178,22 @@ fn test_dummy_callback(runner: &DynamicClustering) -> PyResult<(Vec<usize>, usiz
 #[pyfunction]
 fn new_persistent_graph() -> PyResult<Py<PyPersistentGraph>> {
     PyPersistentGraph::py_from_db_graph(PersistentGraph::new())
+}
+
+/// Re-export Raphtory algorithms so they can be called on the wrapped graph types.
+#[pyfunction]
+#[pyo3(signature=(graph, resolution=1.0, weight_prop=None, tol=None))]
+fn louvain(
+    graph: &PyGraphView,
+    resolution: f64,
+    weight_prop: Option<&str>,
+    tol: Option<f64>,
+) -> NodeState<'static, usize, DynamicGraph> {
+    rp_algorithms::louvain(graph, resolution, weight_prop, tol)
+}
+
+#[pymodule]
+fn algorithms(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(louvain, m)?)?;
+    Ok(())
 }

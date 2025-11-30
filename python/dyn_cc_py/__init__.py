@@ -12,6 +12,9 @@ import numpy as np
 
 # Import everything from the native extension.
 from .dyn_cc_py import *  # noqa: F401,F403
+from . import dyn_cc_py as _native
+# Re-export Raphtory algorithms exposed by the native module (works with the wrapped graph type).
+algorithms = _native.algorithms
 
 
 def __getattr__(name: str):

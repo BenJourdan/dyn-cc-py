@@ -128,6 +128,28 @@ def louvain(graph: csr_array, clusters: int) -> Tuple[List[int], int]:
     return labels.tolist(), used
 
 
+def raphtory_louvain_baseline(graph, start: int, end: int, step: int, subset: List[str], subset_labels: List[int], weight_prop: str = "w"):
+    """Run Raphtory's Louvain on the same snapshot times as the dynamic algorithms."""
+    times = list(range(start, end, step))
+    records = []
+
+    t0 = time.time()
+    for t in times:
+        view = graph.at(t)
+        clustering = dyn_cc_py.algorithms.louvain(view, weight_prop=weight_prop)
+        labels = []
+        for node in subset:
+            val = clustering.get(node)
+            labels.append(val if val is not None else -1)
+        clusters = int(max((v for v in labels if v >= 0), default=-1) + 1) if labels else 0
+        ari = adjusted_rand_score(labels, subset_labels)
+        records.append({"time": t, "ari": ari, "clusters": clusters})
+
+    duration = time.time()-t0
+    print(f"baseline took {duration:.3f} seconds")
+    return records, duration
+
+
 def run_with_alg(graph,start,end,step,alg, num_clusters, subset, subset_labels, coreset_size=1024):
     dyn_cc = DynamicClustering(
     alg,
@@ -153,16 +175,17 @@ def run_with_alg(graph,start,end,step,alg, num_clusters, subset, subset_labels, 
         ari = adjusted_rand_score(pred_labels,subset_labels)
         records.append({"time": t, "ari": ari, "clusters": k})
 
-    print(f"Took {time.time() -t0:.3f} seconds")
-    return records
+    duration = time.time() -t0
+    print(f"{alg.__name__}Took {duration:.3f} seconds")
+    return records, duration
 
 def main():
     # Mimic the generate_sbm_commands helper from dyn-cc tests (simplified: only inserts).
     seed = 4242
     
-    n_per_cluster = 512
+    n_per_cluster = 1024
     k_clusters = 10
-    p_internal = 0.25
+    p_internal = 0.33
     q_external = 1.0/(n_per_cluster*k_clusters)
     n_multiplier = 3
 
@@ -199,10 +222,12 @@ def main():
     step = int(end/20)
 
     # Run all algs and collect metrics
+    baseline_louvain, baseline_time = raphtory_louvain_baseline(graph, start, end, step, subset, subset_labels, weight_prop="w")
     results = {
         "Leiden": run_with_alg(graph, start,end,step, leiden, k_clusters, subset, subset_labels, coreset_size),
         "Spectral": run_with_alg(graph, start,end,step, spectral, k_clusters, subset, subset_labels, coreset_size),
         "Louvain": run_with_alg(graph, start,end,step, louvain, k_clusters, subset, subset_labels, coreset_size),
+        "Raphtory Louvain": (baseline_louvain, baseline_time),
     }
 
     # Plot ARI and clusters used over time on separate subplots
@@ -218,23 +243,50 @@ def main():
         "Leiden": "blue",
         "Spectral": "green",
         "Louvain": "red",
+        "Raphtory Louvain": "orange",
     }
 
-    for name, recs in results.items():
+    ari_title_added = False
+    cluster_title_added = False
+
+    for name, (recs, duration) in results.items():
         times = [r["time"] for r in recs]
         aris = [r["ari"] for r in recs]
         clusters = [r["clusters"] for r in recs]
+        label = f"{name} ({duration:.1f}s)"
 
         fig.add_trace(
-            go.Scatter(x=times, y=aris, mode="lines+markers", name=f"{name} ARI", line=dict(color=palette.get(name, None))),
+            go.Scatter(
+                x=times,
+                y=aris,
+                mode="lines+markers",
+                name=f"{label} ARI",
+                line=dict(color=palette.get(name, None)),
+                legendgroup="ARI",
+                legendgrouptitle_text=None if ari_title_added else "ARI",
+            ),
             row=1, col=1,
         )
         fig.add_trace(
-            go.Scatter(x=times, y=clusters, mode="lines+markers", name=f"{name} clusters", line=dict(dash="dot", color=palette.get(name, None))),
+            go.Scatter(
+                x=times,
+                y=clusters,
+                mode="lines+markers",
+                name=f"{label} clusters",
+                line=dict(dash="dot", color=palette.get(name, None)),
+                legendgroup="Clusters",
+                legendgrouptitle_text=None if cluster_title_added else "Clusters",
+            ),
             row=2, col=1,
         )
+        ari_title_added = True
+        cluster_title_added = True
 
-    fig.update_layout(title="Clustering metrics over time", xaxis_title="Time")
+    fig.update_layout(
+        title="Clustering metrics over time",
+        xaxis_title="Time",
+        legend=dict(tracegroupgap=10),
+    )
     fig.update_yaxes(title_text="ARI", range=[0,1], row=1, col=1)
     fig.update_yaxes(title_text="Clusters used", row=2, col=1)
     fig.write_image("cluster_metrics.png")
