@@ -12,5 +12,11 @@ crate-type = ["cdylib", "rlib"]
 pyo3 = { version = "0.25.1", features = ["extension-module"] }
 dyn-cc = { path = "../dyn-cc" }
 faer = "0.23.2"
-raphtory = { version = "0.16.3", features = ["python"] }
+raphtory = { path = "/home/ben/GIT/Raphtory/raphtory", features = ["python"] }
 # raphtory = { version = "0.16.3" }
+
+[patch.crates-io]
+raphtory = { path = "/home/ben/GIT/Raphtory/raphtory" }
+raphtory-api = { path = "/home/ben/GIT/Raphtory/raphtory-api" }        # if present in the repo
+raphtory-core = { path = "/home/ben/GIT/Raphtory/raphtory-core" }      # ditto
+raphtory-storage = { path = "/home/ben/GIT/Raphtory/raphtory-storage" }

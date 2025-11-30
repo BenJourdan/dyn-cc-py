@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "dyn-cc-py"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -12,12 +12,19 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
+    "kaleido>=1.2.0",
     "maturin>=1.10.2",
     "patchelf>=0.17.2.4",
-    "raphtory>=0.13.1",
-    "scipy>=1.10.1",
+    "plotly>=6.5.0",
+    "raphtory @ file:///home/ben/GIT/Raphtory/python",
+    "scikit-learn>=1.7.2",
+    "scikit-network>=0.33.5",
+    "scipy>=1.15.3",
 ]
 [tool.maturin]
 features = ["pyo3/extension-module"]
 python-source = "python"
 module-name = "dyn_cc_py.dyn_cc_py"
+
+[tool.uv.sources]
+raphtory = { path = "../Raphtory/python" }

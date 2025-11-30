@@ -1,9 +1,10 @@
 use faer::sparse::{SparseRowMat, SymbolicSparseRowMat};
 use pyo3::exceptions::{PyTypeError};
-use pyo3::prelude::*;
+use pyo3::{PyTypeInfo, prelude::*};
 use pyo3::types::{PyAny, PyList};
 use raphtory::core::entities::VID;
 use raphtory::prelude::{GID, GraphViewOps};
+use raphtory::python::graph::graph_with_deletions::PyPersistentGraph;
 use std::sync::Arc;
 
 
@@ -121,10 +122,17 @@ impl DynamicClustering {
     }
 }
 
+// #[pyfunction]
+// fn persistent_type_ptr() -> usize {
+//     Python::with_gil(|py| raphtory::python::graph::graph_with_deletions::PyPersistentGraph::type_object_raw(py) as usize)
+// }
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn dyn_cc_py(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(test_dummy_callback, m)?)?;
+    m.add_function(wrap_pyfunction!(new_persistent_graph, m)?)?;
+    // m.add_function(wrap_pyfunction!(persistent_type_ptr, m)?)?;
     m.add_class::<DynamicClustering>()?;
     Ok(())
 }
@@ -155,4 +163,10 @@ fn test_dummy_callback(runner: &DynamicClustering) -> PyResult<(Vec<usize>, usiz
     let alg = runner.into_alg();
     let mut mat = mat;
     Ok(alg(&mut mat, 2))
+}
+
+/// Construct a Raphtory persistent graph using the same type embedded in this extension.
+#[pyfunction]
+fn new_persistent_graph() -> PyResult<Py<PyPersistentGraph>> {
+    PyPersistentGraph::py_from_db_graph(PersistentGraph::new())
 }
