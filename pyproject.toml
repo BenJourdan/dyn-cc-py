@@ -16,7 +16,7 @@ dependencies = [
     "maturin>=1.10.2",
     "patchelf>=0.17.2.4",
     "plotly>=6.5.0",
-    "raphtory @ file:///home/ben/GIT/Raphtory/python",
+    "raphtory>=0.16.3",
     "scikit-learn>=1.7.2",
     "scikit-network>=0.33.5",
     "scipy>=1.15.3",
@@ -26,5 +26,4 @@ features = ["pyo3/extension-module"]
 python-source = "python"
 module-name = "dyn_cc_py.dyn_cc_py"
 
-[tool.uv.sources]
-raphtory = { path = "../Raphtory/python" }
+
